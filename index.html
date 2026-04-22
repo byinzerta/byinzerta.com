@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>inZerta Studio — Campañas con IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --black: #080808;
+    --white: #f0ede8;
+    --grey: #1a1a1a;
+    --accent: #c8ff00;
+    --muted: #3a3a3a;
+    --text-muted: #666;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: 'DM Mono', monospace; cursor: none; overflow-x: hidden; }
+  .cursor { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; }
+  .cursor-ring { width: 32px; height: 32px; border: 1px solid rgba(200,255,0,0.4); border-radius: 50%; position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9998; transition: transform 0.15s ease; }
+
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; }
+  nav::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(8,8,8,0.95), transparent); pointer-events: none; }
+  .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 4px; color: var(--white); text-decoration: none; position: relative; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 40px; list-style: none; position: relative; }
+  .nav-links a { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent); }
+
+  .hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; position: relative; overflow: hidden; }
+  .hero-left { display: flex; flex-direction: column; justify-content: flex-end; padding: 120px 48px 80px; position: relative; z-index: 2; }
+  .hero-tag { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 32px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
+  .hero-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(72px, 8vw, 120px); line-height: 0.9; letter-spacing: 2px; opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
+  .hero-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--accent); }
+  .hero-sub { margin-top: 40px; font-size: 13px; line-height: 1.9; color: var(--text-muted); max-width: 400px; opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
+  .hero-cta { margin-top: 48px; display: flex; gap: 16px; align-items: center; opacity: 0; animation: fadeUp 0.8s ease 0.8s forwards; }
+  .btn-primary { background: var(--accent); color: var(--black); padding: 14px 32px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; text-decoration: none; transition: transform 0.2s, background 0.2s; display: inline-block; }
+  .btn-primary:hover { transform: translate(-2px, -2px); background: #d4ff1a; }
+  .btn-ghost { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--muted); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
+  .btn-ghost:hover { color: var(--white); border-color: var(--white); }
+  .hero-right { position: relative; overflow: hidden; }
+  .hero-right::before { content: 'inZ'; font-family: 'Bebas Neue', sans-serif; font-size: 400px; color: rgba(255,255,255,0.02); position: absolute; right: -40px; top: 50%; transform: translateY(-50%); line-height: 1; pointer-events: none; animation: slowDrift 20s ease-in-out infinite alternate; }
+  .hero-stats { position: absolute; bottom: 80px; right: 48px; display: flex; flex-direction: column; gap: 32px; text-align: right; opacity: 0; animation: fadeUp 0.8s ease 1s forwards; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1; }
+  .stat-num span { color: var(--accent); }
+  .stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-top: 4px; }
+  .hero-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: linear-gradient(to bottom, transparent, var(--muted) 30%, var(--muted) 70%, transparent); opacity: 0; animation: fadeIn 1s ease 1.2s forwards; }
+
+  .marquee-wrap { border-top: 1px solid var(--muted); border-bottom: 1px solid var(--muted); overflow: hidden; padding: 16px 0; background: var(--grey); }
+  .marquee-track { display: flex; gap: 64px; animation: marquee 25s linear infinite; white-space: nowrap; }
+  .marquee-item { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 4px; color: var(--text-muted); flex-shrink: 0; }
+  .marquee-item span { color: var(--accent); margin-right: 64px; }
+
+  section { padding: 120px 48px; }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 80px; border-bottom: 1px solid var(--muted); padding-bottom: 32px; }
+  .section-num { font-size: 10px; letter-spacing: 3px; color: var(--accent); margin-bottom: 12px; }
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(48px, 5vw, 72px); line-height: 1; letter-spacing: 2px; }
+  .section-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--text-muted); }
+
+  .filter-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 60px; }
+  .filter-btn { padding: 8px 20px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; background: transparent; border: 1px solid var(--muted); color: var(--text-muted); cursor: none; transition: all 0.2s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: var(--black); }
+
+  .portfolio-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+  .portfolio-item { position: relative; overflow: hidden; background: var(--grey); cursor: none; }
+  .portfolio-item:nth-child(6n+1) { grid-column: span 8; aspect-ratio: 16/9; }
+  .portfolio-item:nth-child(6n+2) { grid-column: span 4; aspect-ratio: 4/3; }
+  .portfolio-item:nth-child(6n+3) { grid-column: span 4; aspect-ratio: 4/3; }
+  .portfolio-item:nth-child(6n+4) { grid-column: span 4; aspect-ratio: 4/3; }
+  .portfolio-item:nth-child(6n+5) { grid-column: span 6; aspect-ratio: 16/9; }
+  .portfolio-item:nth-child(6n+6) { grid-column: span 6; aspect-ratio: 16/9; }
+  .portfolio-placeholder { width: 100%; height: 100%; min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; position: relative; overflow: hidden; transition: transform 0.4s ease; }
+  .portfolio-item:hover .portfolio-placeholder { transform: scale(1.03); }
+  .portfolio-placeholder::before { content: attr(data-nicho); font-family: 'Bebas Neue', sans-serif; font-size: 70px; color: rgba(255,255,255,0.04); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); white-space: nowrap; letter-spacing: 4px; }
+  .portfolio-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%); }
+  .portfolio-info { position: relative; z-index: 2; }
+  .portfolio-nicho { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .portfolio-name { font-family: 'Instrument Serif', serif; font-size: 18px; font-style: italic; color: var(--white); }
+  .portfolio-tag { position: absolute; top: 20px; right: 20px; background: var(--accent); color: var(--black); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; opacity: 0; transition: opacity 0.2s; }
+  .portfolio-item:hover .portfolio-tag { opacity: 1; }
+  .nicho-gastro .portfolio-placeholder { background: linear-gradient(135deg, #1a1208 0%, #0d0d0d 100%); }
+  .nicho-moda .portfolio-placeholder { background: linear-gradient(135deg, #0a0a14 0%, #0d0d0d 100%); }
+  .nicho-ecomm .portfolio-placeholder { background: linear-gradient(135deg, #0a140a 0%, #0d0d0d 100%); }
+  .nicho-tech .portfolio-placeholder { background: linear-gradient(135deg, #14100a 0%, #0d0d0d 100%); }
+  .nicho-realestate .portfolio-placeholder { background: linear-gradient(135deg, #120a14 0%, #0d0d0d 100%); }
+
+  .adn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .adn-card { background: var(--grey); padding: 40px 32px; position: relative; overflow: hidden; transition: background 0.3s; }
+  .adn-card:hover { background: #222; }
+  .adn-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
+  .adn-card:hover::after { transform: scaleX(1); }
+  .adn-icon { font-size: 20px; margin-bottom: 24px; color: var(--accent); }
+  .adn-name { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; margin-bottom: 12px; }
+  .adn-desc { font-size: 12px; line-height: 1.8; color: var(--text-muted); }
+
+  .planes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .plan-card { background: var(--grey); padding: 48px 36px; position: relative; display: flex; flex-direction: column; transition: background 0.3s; }
+  .plan-card:hover { background: #1f1f1f; }
+  .plan-card.featured { background: var(--accent); }
+  .plan-card.featured .plan-num, .plan-card.featured .plan-name, .plan-card.featured .plan-tagline, .plan-card.featured .plan-price, .plan-card.featured .plan-period { color: var(--black); }
+  .plan-card.featured .plan-items li { color: var(--black); }
+  .plan-card.featured .plan-items li::before { color: var(--black); }
+  .plan-card.featured .plan-tag { background: var(--black); color: var(--accent); }
+  .plan-num { font-size: 10px; letter-spacing: 3px; color: var(--accent); margin-bottom: 24px; }
+  .plan-name { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 8px; }
+  .plan-tagline { font-size: 11px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.6; font-style: italic; }
+  .plan-price { font-family: 'Bebas Neue', sans-serif; font-size: 56px; line-height: 1; margin-bottom: 4px; }
+  .plan-period { font-size: 10px; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.6; }
+  .plan-items { list-style: none; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .plan-items li { font-size: 11px; line-height: 1.6; color: var(--text-muted); padding-left: 16px; position: relative; }
+  .plan-items li::before { content: '→'; position: absolute; left: 0; color: var(--accent); }
+  .plan-tag { display: inline-block; margin-top: 32px; background: var(--accent); color: var(--black); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 8px 18px; align-self: flex-start; text-decoration: none; transition: transform 0.2s; }
+  .plan-tag:hover { transform: translate(-2px, -2px); }
+
+  .process-list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+  .process-step { background: var(--grey); padding: 40px 28px; position: relative; }
+  .process-step-num { font-family: 'Bebas Neue', sans-serif; font-size: 80px; line-height: 1; color: rgba(255,255,255,0.04); position: absolute; top: 12px; right: 16px; }
+  .process-icon { font-size: 20px; margin-bottom: 20px; }
+  .process-name { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 10px; color: var(--accent); }
+  .process-desc { font-size: 11px; line-height: 1.8; color: var(--text-muted); }
+
+  .reviews-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; }
+  .review-card { background: var(--grey); padding: 48px 40px; }
+  .review-stars { color: var(--accent); font-size: 14px; letter-spacing: 4px; margin-bottom: 24px; }
+  .review-text { font-family: 'Instrument Serif', serif; font-size: 18px; font-style: italic; line-height: 1.7; color: var(--white); margin-bottom: 32px; }
+  .review-name { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); margin-bottom: 4px; }
+  .review-role { font-size: 10px; letter-spacing: 1px; color: var(--text-muted); }
+
+  .contact-section { background: var(--grey); text-align: center; padding: 140px 48px; position: relative; overflow: hidden; }
+  .contact-section::before { content: 'INZERTA'; font-family: 'Bebas Neue', sans-serif; font-size: 280px; color: rgba(255,255,255,0.02); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none; }
+  .contact-tag { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; position: relative; }
+  .contact-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(60px, 8vw, 110px); line-height: 0.9; letter-spacing: 2px; margin-bottom: 40px; position: relative; }
+  .contact-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--accent); }
+  .contact-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 56px; position: relative; line-height: 1.8; }
+  .contact-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+  .trabaja-section { border-top: 1px solid var(--muted); padding: 64px 48px; display: flex; justify-content: space-between; align-items: center; }
+  .trabaja-tag { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+  .trabaja-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 2px; }
+  .trabaja-title span { color: var(--accent); }
+  .trabaja-sub { font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.7; max-width: 360px; }
+
+  footer { padding: 40px 48px; border-top: 1px solid var(--muted); }
+  .footer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+  .footer-logo { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 4px; }
+  .footer-logo span { color: var(--accent); }
+  .footer-cols { display: flex; gap: 80px; }
+  .footer-col-title { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; }
+  .footer-col-links { display: flex; flex-direction: column; gap: 8px; }
+  .footer-col-links a { font-size: 11px; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+  .footer-col-links a:hover { color: var(--white); }
+  .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 32px; border-top: 1px solid var(--muted); }
+  .footer-copy { font-size: 10px; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+  .footer-legal { display: flex; gap: 24px; }
+  .footer-legal a { font-size: 10px; letter-spacing: 1px; color: var(--text-muted); text-decoration: none; text-transform: uppercase; transition: color 0.2s; }
+  .footer-legal a:hover { color: var(--white); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { to { opacity: 1; } }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @keyframes slowDrift { from { transform: translateY(-50%); } to { transform: translateY(-52%) translateX(-20px); } }
+  .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 768px) {
+    nav { padding: 20px 24px; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; }
+    .hero-left { padding: 100px 24px 60px; }
+    .hero-right { display: none; }
+    section { padding: 80px 24px; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .portfolio-grid { grid-template-columns: 1fr; }
+    .portfolio-item, .portfolio-item:nth-child(n) { grid-column: span 1 !important; aspect-ratio: 4/3; }
+    .adn-grid, .planes-grid, .reviews-grid { grid-template-columns: 1fr; }
+    .process-list { grid-template-columns: 1fr 1fr; }
+    .trabaja-section { flex-direction: column; gap: 32px; align-items: flex-start; padding: 48px 24px; }
+    footer { padding: 40px 24px; }
+    .footer-top { flex-direction: column; gap: 40px; }
+    .footer-cols { flex-direction: column; gap: 32px; }
+    .footer-bottom { flex-direction: column; gap: 16px; }
+    .contact-section { padding: 80px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<nav>
+  <a href="#" class="nav-logo">in<span>Z</span>erta</a>
+  <ul class="nav-links">
+    <li><a href="#trabajo">Trabajo</a></li>
+    <li><a href="#servicios">Servicios</a></li>
+    <li><a href="#planes">Planes</a></li>
+    <li><a href="#proceso">Proceso</a></li>
+    <li><a href="#contacto">Contacto</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-line"></div>
+  <div class="hero-left">
+    <p class="hero-tag">inZerta Studio — Estudio creativo internacional</p>
+    <h1 class="hero-title">Contenido<br>para marcas<br><em>que saben.</em></h1>
+    <p class="hero-sub">Producimos contenido para marcas que entienden que la imagen es parte de la calidad de su producto. Campañas completas, listas para publicar en 48 horas.</p>
+    <div class="hero-cta">
+      <a href="#contacto" class="btn-primary">Agendar llamada</a>
+      <a href="#trabajo" class="btn-ghost">Ver trabajo →</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-stats">
+      <div><div class="stat-num">100<span>+</span></div><div class="stat-label">Marcas producidas</div></div>
+      <div><div class="stat-num">48<span>h</span></div><div class="stat-label">Entrega campaña</div></div>
+      <div><div class="stat-num">∞</div><div class="stat-label">Operamos remoto</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <div class="marquee-item">Gastronomía <span>✦</span></div>
+    <div class="marquee-item">Moda <span>✦</span></div>
+    <div class="marquee-item">E-Commerce <span>✦</span></div>
+    <div class="marquee-item">Tech <span>✦</span></div>
+    <div class="marquee-item">Bienes Raíces <span>✦</span></div>
+    <div class="marquee-item">Campañas en 48h <span>✦</span></div>
+    <div class="marquee-item">Alta retención <span>✦</span></div>
+    <div class="marquee-item">Contenido con IA <span>✦</span></div>
+    <div class="marquee-item">Gastronomía <span>✦</span></div>
+    <div class="marquee-item">Moda <span>✦</span></div>
+    <div class="marquee-item">E-Commerce <span>✦</span></div>
+    <div class="marquee-item">Tech <span>✦</span></div>
+    <div class="marquee-item">Bienes Raíces <span>✦</span></div>
+    <div class="marquee-item">Campañas en 48h <span>✦</span></div>
+    <div class="marquee-item">Alta retención <span>✦</span></div>
+    <div class="marquee-item">Contenido con IA <span>✦</span></div>
+  </div>
+</div>
+
+<!-- PORTFOLIO -->
+<section id="trabajo">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-num">01 — Trabajo</div>
+      <h2 class="section-title">Lo que<br><em>producimos</em></h2>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); max-width:280px; text-align:right; line-height:1.8;">Campañas completas con IA. Fotos, videos, carruseles e identidad visual listos para publicar.</p>
+  </div>
+  <div class="filter-wrap reveal">
+    <button class="filter-btn active" onclick="filterPortfolio('all', this)">Todo</button>
+    <button class="filter-btn" onclick="filterPortfolio('gastro', this)">Gastronomía</button>
+    <button class="filter-btn" onclick="filterPortfolio('moda', this)">Moda</button>
+    <button class="filter-btn" onclick="filterPortfolio('ecomm', this)">E-Commerce</button>
+    <button class="filter-btn" onclick="filterPortfolio('tech', this)">Tech</button>
+    <button class="filter-btn" onclick="filterPortfolio('realestate', this)">Bienes Raíces</button>
+  </div>
+  <div class="portfolio-grid reveal" id="portfolioGrid">
+    <!-- GASTRO -->
+    <div class="portfolio-item nicho-gastro" data-cat="gastro"><div class="portfolio-placeholder" data-nicho="GASTRO"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Gastronomía</div><div class="portfolio-name">Campaña mensual — Restaurante</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-gastro" data-cat="gastro"><div class="portfolio-placeholder" data-nicho="GASTRO"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Gastronomía</div><div class="portfolio-name">Identidad visual — Café</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-gastro" data-cat="gastro"><div class="portfolio-placeholder" data-nicho="GASTRO"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Gastronomía</div><div class="portfolio-name">Menú visual — Cevichería</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-gastro" data-cat="gastro"><div class="portfolio-placeholder" data-nicho="GASTRO"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Gastronomía</div><div class="portfolio-name">Reels — Platos en movimiento</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-gastro" data-cat="gastro"><div class="portfolio-placeholder" data-nicho="GASTRO"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Gastronomía</div><div class="portfolio-name">Lanzamiento — Nuevo local</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <!-- MODA -->
+    <div class="portfolio-item nicho-moda" data-cat="moda"><div class="portfolio-placeholder" data-nicho="MODA"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Moda</div><div class="portfolio-name">Lookbook — Streetwear</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-moda" data-cat="moda"><div class="portfolio-placeholder" data-nicho="MODA"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Moda</div><div class="portfolio-name">Campaña — Colección verano</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-moda" data-cat="moda"><div class="portfolio-placeholder" data-nicho="MODA"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Moda</div><div class="portfolio-name">Identidad — Marca independiente</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-moda" data-cat="moda"><div class="portfolio-placeholder" data-nicho="MODA"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Moda</div><div class="portfolio-name">Drop — Edición limitada</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-moda" data-cat="moda"><div class="portfolio-placeholder" data-nicho="MODA"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Moda</div><div class="portfolio-name">Contenido mensual — Accesorios</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <!-- ECOMM -->
+    <div class="portfolio-item nicho-ecomm" data-cat="ecomm"><div class="portfolio-placeholder" data-nicho="ECOMM"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">E-Commerce</div><div class="portfolio-name">Campaña visual — Producto</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-ecomm" data-cat="ecomm"><div class="portfolio-placeholder" data-nicho="ECOMM"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">E-Commerce</div><div class="portfolio-name">Lifestyle — Suplementos</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-ecomm" data-cat="ecomm"><div class="portfolio-placeholder" data-nicho="ECOMM"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">E-Commerce</div><div class="portfolio-name">Lanzamiento — Vapes & accesorios</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-ecomm" data-cat="ecomm"><div class="portfolio-placeholder" data-nicho="ECOMM"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">E-Commerce</div><div class="portfolio-name">Contenido — Skincare</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-ecomm" data-cat="ecomm"><div class="portfolio-placeholder" data-nicho="ECOMM"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">E-Commerce</div><div class="portfolio-name">Campaña — Gadgets lifestyle</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <!-- TECH -->
+    <div class="portfolio-item nicho-tech" data-cat="tech"><div class="portfolio-placeholder" data-nicho="TECH"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Tech</div><div class="portfolio-name">Lanzamiento — App móvil</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-tech" data-cat="tech"><div class="portfolio-placeholder" data-nicho="TECH"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Tech</div><div class="portfolio-name">Identidad — SaaS</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-tech" data-cat="tech"><div class="portfolio-placeholder" data-nicho="TECH"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Tech</div><div class="portfolio-name">Campaña — Hardware</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-tech" data-cat="tech"><div class="portfolio-placeholder" data-nicho="TECH"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Tech</div><div class="portfolio-name">Contenido — Agencia IA</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-tech" data-cat="tech"><div class="portfolio-placeholder" data-nicho="TECH"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Tech</div><div class="portfolio-name">Lanzamiento — Producto digital</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <!-- REAL ESTATE -->
+    <div class="portfolio-item nicho-realestate" data-cat="realestate"><div class="portfolio-placeholder" data-nicho="REAL ESTATE"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Bienes Raíces</div><div class="portfolio-name">Campaña — Proyecto residencial</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-realestate" data-cat="realestate"><div class="portfolio-placeholder" data-nicho="REAL ESTATE"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Bienes Raíces</div><div class="portfolio-name">Identidad — Inmobiliaria</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-realestate" data-cat="realestate"><div class="portfolio-placeholder" data-nicho="REAL ESTATE"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Bienes Raíces</div><div class="portfolio-name">Contenido — Propiedades de lujo</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-realestate" data-cat="realestate"><div class="portfolio-placeholder" data-nicho="REAL ESTATE"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Bienes Raíces</div><div class="portfolio-name">Lanzamiento — Departamentos</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+    <div class="portfolio-item nicho-realestate" data-cat="realestate"><div class="portfolio-placeholder" data-nicho="REAL ESTATE"><div class="portfolio-overlay"></div><div class="portfolio-info"><div class="portfolio-nicho">Bienes Raíces</div><div class="portfolio-name">Campaña — Agente independiente</div></div><div class="portfolio-tag">Ver proyecto</div></div></div>
+  </div>
+</section>
+
+<!-- ADN -->
+<section id="servicios" style="background: var(--grey);">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-num">02 — Nuestro sistema</div>
+      <h2 class="section-title">ADN de<br><em>inZerta</em></h2>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); max-width:300px; text-align:right; line-height:1.8;">El nivel de tu producto merece el nivel de su presentación. Nuestro sistema elimina semanas de logística y presupuestos inflados.</p>
+  </div>
+  <div class="adn-grid reveal">
+    <div class="adn-card"><div class="adn-icon">◈</div><div class="adn-name">ADN de marca</div><div class="adn-desc">Entendemos tu estilo, usamos tus productos y construimos desde tu identidad. No imponemos una estética genérica.</div></div>
+    <div class="adn-card"><div class="adn-icon">◉</div><div class="adn-name">Dirección</div><div class="adn-desc">Construimos identidad visual. Desde el primer activo hasta la guía completa, todo tiene un hilo narrativo.</div></div>
+    <div class="adn-card"><div class="adn-icon">◎</div><div class="adn-name">Precisión</div><div class="adn-desc">Ajustamos cada detalle según tus objetivos. El contenido no es decoración, es una herramienta de venta.</div></div>
+    <div class="adn-card"><div class="adn-icon">○</div><div class="adn-name">Concepto</div><div class="adn-desc">Creamos narrativa a partir de una idea. Cada campaña tiene una historia que conecta con tu audiencia.</div></div>
+    <div class="adn-card"><div class="adn-icon">◌</div><div class="adn-name">Producción IA</div><div class="adn-desc">Activos visuales de alta calidad producidos con tecnología IA. Rápido, profesional y escalable.</div></div>
+    <div class="adn-card"><div class="adn-icon">✦</div><div class="adn-name">Entrega 48h</div><div class="adn-desc">En 48 horas recibes el contenido optimizado y listo para publicar. Sin esperas, sin intermediarios.</div></div>
+  </div>
+</section>
+
+<!-- PLANES -->
+<section id="planes">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-num">03 — Planes</div>
+      <h2 class="section-title">Elige tu<br><em>plan</em></h2>
+    </div>
+  </div>
+  <div class="planes-grid reveal">
+    <div class="plan-card">
+      <div class="plan-num">01</div>
+      <div class="plan-name">Plan Prueba</div>
+      <div class="plan-tagline">"Ideal para validar si tu negocio empieza a recibir más mensajes y visitas."</div>
+      <div class="plan-price">$80</div>
+      <div class="plan-period">Contenido para 7 días · Entrega en 48h</div>
+      <ul class="plan-items">
+        <li>1 visita de 30 min con cámara profesional y dron</li>
+        <li>6 fotos listas para publicar</li>
+        <li>2 imágenes de promoción</li>
+        <li>1 carrusel para redes</li>
+        <li>1 video 6–12s</li>
+        <li>Producción con Inteligencia Artificial</li>
+      </ul>
+      <a href="#contacto" class="plan-tag">Empezar →</a>
+    </div>
+    <div class="plan-card featured">
+      <div class="plan-num">02 — Más popular</div>
+      <div class="plan-name">Plan Movimiento</div>
+      <div class="plan-tagline">"Para que la gente vea la calidad de tu negocio y genere más visitas y ventas."</div>
+      <div class="plan-price">$148</div>
+      <div class="plan-period">Contenido para 15 días · Entrega 72h + soporte WhatsApp</div>
+      <ul class="plan-items">
+        <li>2 visitas de 30 min con cámara y dron</li>
+        <li>12 fotos: producto, ambiente y fachada</li>
+        <li>4 imágenes de promoción</li>
+        <li>2 carruseles</li>
+        <li>2 videos 6–12s</li>
+        <li>Producción con Inteligencia Artificial</li>
+      </ul>
+      <a href="#contacto" class="plan-tag">Empezar →</a>
+    </div>
+    <div class="plan-card">
+      <div class="plan-num">03</div>
+      <div class="plan-name">Plan Venta Activa</div>
+      <div class="plan-tagline">"Contenido listo para publicar, tu negocio activo en redes todos los días."</div>
+      <div class="plan-price">$243</div>
+      <div class="plan-period">Contenido para 30 días · Ajustes cada 15 días</div>
+      <ul class="plan-items">
+        <li>3 visitas al mes con cámara y dron</li>
+        <li>20 fotos: producto, ambiente y detalles</li>
+        <li>8 imágenes de promoción</li>
+        <li>4 carruseles</li>
+        <li>4 videos 6–12s</li>
+        <li>Producción IA + optimización mensual</li>
+      </ul>
+      <a href="#contacto" class="plan-tag">Empezar →</a>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESO -->
+<section id="proceso" style="background: var(--grey);">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-num">04 — Proceso</div>
+      <h2 class="section-title">Cómo<br><em>trabajamos</em></h2>
+    </div>
+  </div>
+  <div class="process-list reveal">
+    <div class="process-step"><div class="process-step-num">01</div><div class="process-icon">◈</div><div class="process-name">Brief</div><div class="process-desc">Nos cuentas qué vendes, a quién y qué quieres lograr. 30 minutos por llamada.</div></div>
+    <div class="process-step"><div class="process-step-num">02</div><div class="process-icon">◉</div><div class="process-name">ADN</div><div class="process-desc">Entendemos tu estilo, tu producto y tu audiencia. Construimos desde tu identidad.</div></div>
+    <div class="process-step"><div class="process-step-num">03</div><div class="process-icon">◎</div><div class="process-name">Producción</div><div class="process-desc">Producimos la campaña completa con IA. Solo manda el producto o las fotos.</div></div>
+    <div class="process-step"><div class="process-step-num">04</div><div class="process-icon">○</div><div class="process-name">Revisión</div><div class="process-desc">Te mandamos todo para aprobación. Dos rondas de cambios incluidas.</div></div>
+    <div class="process-step"><div class="process-step-num">05</div><div class="process-icon">◌</div><div class="process-name">Precisión</div><div class="process-desc">Ajustamos cada detalle según tus objetivos y lo que está funcionando.</div></div>
+    <div class="process-step"><div class="process-step-num">06</div><div class="process-icon">✦</div><div class="process-name">Entrega</div><div class="process-desc">Archivos listos para publicar. En 48 horas desde el brief aprobado.</div></div>
+  </div>
+</section>
+
+<!-- RESEÑAS -->
+<section id="resenas">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-num">05 — Clientes</div>
+      <h2 class="section-title">Lo que<br><em>dicen</em></h2>
+    </div>
+  </div>
+  <div class="reviews-grid reveal">
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"Desde que trabajamos con inZerta el contenido de nuestro negocio cambió completamente. En menos de dos semanas empezamos a recibir más mensajes y consultas."</div><div class="review-name">Carlos M.</div><div class="review-role">Dueño — Restaurante, Perú</div></div>
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"Entregaron una campaña completa en 48 horas. La calidad visual superó lo que esperábamos. Solo mandamos fotos del producto y ellos hicieron el resto."</div><div class="review-name">Sofía R.</div><div class="review-role">Fundadora — Marca de moda, Colombia</div></div>
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"Lo que más me sorprendió fue que entendieron la identidad de nuestra marca desde el primer brief. El contenido se siente nuestro, no genérico."</div><div class="review-name">Diego F.</div><div class="review-role">CEO — E-commerce, México</div></div>
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"Llevábamos meses sin consistencia en redes. Con inZerta por primera vez tenemos contenido profesional que realmente representa lo que somos como marca."</div><div class="review-name">Valentina C.</div><div class="review-role">Directora de marketing — Tech, Argentina</div></div>
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"Trabajar de forma remota con ellos es muy fácil. Sin reuniones interminables. Mandas el brief y en dos días tienes el contenido listo para publicar."</div><div class="review-name">Andrés P.</div><div class="review-role">Agente — Bienes raíces, Chile</div></div>
+    <div class="review-card"><div class="review-stars">★★★★★</div><div class="review-text">"El resultado fue visible desde el primer mes. Nuestras publicaciones empezaron a generar más interacción y las consultas por DM aumentaron notablemente."</div><div class="review-name">Lucía T.</div><div class="review-role">Dueña — Tienda lifestyle, España</div></div>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section class="contact-section" id="contacto">
+  <div class="contact-tag">¿Tienes una marca?</div>
+  <h2 class="contact-title">Hablemos<br><em>hoy.</em></h2>
+  <p class="contact-sub">Sin reuniones largas. Sin propuestas de 20 páginas.<br>Agenda una llamada de 30 minutos y te mostramos cómo lo haríamos.</p>
+  <div class="contact-links">
+    <a href="#" class="btn-primary">Agendar llamada →</a>
+    <a href="https://instagram.com/byinzerta" target="_blank" class="btn-ghost">Instagram</a>
+  </div>
+</section>
+
+<!-- TRABAJA CON NOSOTROS -->
+<div class="trabaja-section">
+  <div>
+    <div class="trabaja-tag">¿Eres creativo?</div>
+    <div class="trabaja-title">Trabaja con <span>inZerta</span></div>
+    <div class="trabaja-sub">Somos un estudio en crecimiento. Si produces campañas con IA y quieres ser parte de nuestra red, escríbenos.</div>
+  </div>
+  <a href="https://skool.com/inzerta" target="_blank" class="btn-ghost" style="flex-shrink:0;">Conocer la academia →</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-logo">in<span>Z</span>erta Studio</div>
+    <div class="footer-cols">
+      <div>
+        <div class="footer-col-title">Navegación</div>
+        <div class="footer-col-links">
+          <a href="#trabajo">Trabajo</a>
+          <a href="#servicios">Servicios</a>
+          <a href="#planes">Planes</a>
+          <a href="#proceso">Proceso</a>
+          <a href="#resenas">Clientes</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Contacto</div>
+        <div class="footer-col-links">
+          <a href="#contacto">Agendar llamada</a>
+          <a href="https://instagram.com/byinzerta" target="_blank">Instagram</a>
+          <a href="https://skool.com/inzerta" target="_blank">Academia</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Legal</div>
+        <div class="footer-col-links">
+          <a href="#">Política de privacidad</a>
+          <a href="#">Términos de servicio</a>
+          <a href="#">Política de cookies</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2025 inZerta Studio. Todos los derechos reservados.</div>
+    <div class="footer-legal">
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animateCursor() {
+    cursor.style.transform = `translate(${mx - 4}px, ${my - 4}px)`;
+    rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+    ring.style.transform = `translate(${rx - 16}px, ${ry - 16}px)`;
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), i * 80);
+    });
+  }, { threshold: 0.08 });
+  reveals.forEach(el => observer.observe(el));
+
+  function filterPortfolio(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.portfolio-item').forEach(item => {
+      item.style.display = (cat === 'all' || item.dataset.cat === cat) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
